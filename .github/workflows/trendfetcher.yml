@@ -1,0 +1,44 @@
+name: Trending Data Pipeline
+
+on:
+  schedule:
+    # Run every Monday at 00:00 UTC
+    - cron: "0 0 * * 1"
+  workflow_dispatch:
+
+jobs:
+  fetch-and-embed:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Trending Data Pipeline
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+          PINECONE_ENVIRONMENT: ${{ secrets.PINECONE_ENVIRONMENT }}
+          PINECONE_INDEX: ${{ secrets.PINECONE_INDEX }}
+        run: |
+          python main.py
+
+      - name: Notify on success
+        if: success()
+        run: echo "✅ Pipeline completed successfully"
+
+      - name: Notify on failure
+        if: failure()
+        run: echo "❌ Pipeline failed"
